@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# 临时文件
+temp_*/
+*_compressed.pptx
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

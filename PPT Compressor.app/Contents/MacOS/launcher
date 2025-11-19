@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Get the Resources directory
+RESOURCES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../Resources" && pwd)"
+
+# Open Terminal and run the compression tool
+osascript <<EOF
+tell application "Terminal"
+    activate
+    do script "cd '$RESOURCES_DIR' && ./launch_ppt_compressor.sh"
+end tell
+EOF
