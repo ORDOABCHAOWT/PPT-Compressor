@@ -314,79 +314,103 @@ class ModernPPTCompressor:
         except Exception as e:
             return image_data, filename, False
     
-    def compress_ppt(self, input_file, output_file=None):
-        """压缩PPT文件"""
+    def compress_ppt(self, input_file, output_file=None, progress_callback=None):
+        """压缩PPT文件，支持进度回调"""
         input_path = Path(input_file)
-        
+
         if not input_path.exists():
             raise FileNotFoundError(f"文件不存在: {input_file}")
-        
+
         if input_path.suffix.lower() not in {'.pptx', '.ppt'}:
             raise ValueError("只支持 .pptx 或 .ppt 格式的文件")
-        
+
         if output_file is None:
             output_path = input_path.parent / f"{input_path.stem}_compressed{input_path.suffix}"
         else:
             output_path = Path(output_file)
-        
+
         print(f"\n📊 开始压缩: {input_path.name}")
         print(f"原始大小: {self.format_size(input_path.stat().st_size)}")
         preset_desc = self.PRESETS[self.preset_name]['desc']
         print(f"压缩档位: {self.preset_name.upper()} - {preset_desc}")
         if self.use_oxipng and self.has_oxipng:
             print(f"🚀 使用oxipng进行PNG无损压缩")
-        
+
         # 创建临时目录
         temp_dir = input_path.parent / f"temp_{input_path.stem}"
         if temp_dir.exists():
             shutil.rmtree(temp_dir)
         temp_dir.mkdir()
-        
+
         try:
+            # 进度回调
+            if progress_callback:
+                progress_callback(5, '解压 PPT 文件...')
+
             print("📦 解压文件中...")
             with zipfile.ZipFile(input_path, 'r') as zip_ref:
                 zip_ref.extractall(temp_dir)
-            
-            image_count = 0
-            total_saved = 0
-            filename_changes = {}
-            
-            print("🖼️  压缩图片中...")
+
+            if progress_callback:
+                progress_callback(15, '扫描图片文件...')
+
+            # 先统计图片总数
+            image_files = []
             for root, dirs, files in os.walk(temp_dir):
                 for file in files:
                     file_path = Path(root) / file
-                    
                     if self.is_image_file(file):
-                        with open(file_path, 'rb') as f:
-                            original_data = f.read()
-                        
-                        original_size = len(original_data)
-                        
-                        # 压缩图片
-                        compressed_data, new_filename, success = self.compress_image(
-                            original_data, file, str(file_path)
-                        )
-                        
-                        if success:
-                            # 如果文件名改变了
-                            if new_filename != file:
-                                new_file_path = file_path.parent / new_filename
-                                filename_changes[str(file_path)] = str(new_file_path)
-                                file_path.unlink()
-                                file_path = new_file_path
-                            
-                            # 保存压缩后的图片
-                            with open(file_path, 'wb') as f:
-                                f.write(compressed_data)
-                            
-                            saved = original_size - len(compressed_data)
-                            image_count += 1
-                            total_saved += saved
-            
+                        image_files.append((file_path, file))
+
+            total_images = len(image_files)
+            print(f"🖼️  发现 {total_images} 个图片文件")
+
+            image_count = 0
+            total_saved = 0
+            filename_changes = {}
+
+            print("🖼️  压缩图片中...")
+            for idx, (file_path, file) in enumerate(image_files):
+                with open(file_path, 'rb') as f:
+                    original_data = f.read()
+
+                original_size = len(original_data)
+
+                # 压缩图片
+                compressed_data, new_filename, success = self.compress_image(
+                    original_data, file, str(file_path)
+                )
+
+                if success:
+                    # 如果文件名改变了
+                    if new_filename != file:
+                        new_file_path = file_path.parent / new_filename
+                        filename_changes[str(file_path)] = str(new_file_path)
+                        file_path.unlink()
+                        file_path = new_file_path
+
+                    # 保存压缩后的图片
+                    with open(file_path, 'wb') as f:
+                        f.write(compressed_data)
+
+                    saved = original_size - len(compressed_data)
+                    image_count += 1
+                    total_saved += saved
+
+                # 更新进度 (15% -> 85%)
+                if progress_callback and total_images > 0:
+                    progress = 15 + int((idx + 1) / total_images * 70)
+                    progress_callback(progress, f'压缩图片 {idx + 1}/{total_images}...')
+
             # 更新XML引用
             if filename_changes:
+                if progress_callback:
+                    progress_callback(87, '更新文件引用...')
                 self._update_xml_references(temp_dir, filename_changes)
-            
+
+            if progress_callback:
+                progress_callback(90, '重新打包文件...')
+
             print("📦 重新打包文件...")
             with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zip_ref:
                 for root, dirs, files in os.walk(temp_dir):
@@ -394,20 +418,23 @@ class ModernPPTCompressor:
                         file_path = Path(root) / file
                         arcname = file_path.relative_to(temp_dir)
                         zip_ref.write(file_path, arcname)
-            
+
+            if progress_callback:
+                progress_callback(98, '完成处理...')
+
             # 显示结果
             output_size = output_path.stat().st_size
             input_size = input_path.stat().st_size
             total_reduction = input_size - output_size
             reduction_percentage = (total_reduction / input_size) * 100
-            
+
             print(f"\n✅ 压缩完成!")
             print(f"压缩图片数量: {image_count}")
             print(f"原始大小: {self.format_size(input_size)}")
             print(f"压缩后大小: {self.format_size(output_size)}")
             print(f"减小: {self.format_size(total_reduction)} ({reduction_percentage:.1f}%)")
             print(f"输出文件: {output_path}")
-            
+
         finally:
             if temp_dir.exists():
                 shutil.rmtree(temp_dir)

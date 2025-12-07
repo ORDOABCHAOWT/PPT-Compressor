@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT Compressor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <div class="window-controls">
+                <span class="control close"></span>
+                <span class="control minimize"></span>
+                <span class="control maximize"></span>
+            </div>
+            <h1>PPT Compressor</h1>
+        </header>
+
+        <main>
+            <div class="upload-zone" id="dropZone">
+                <div class="upload-content">
+                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                    <h2>拖放 PPT 文件到这里</h2>
+                    <p>或者点击选择文件</p>
+                    <input type="file" id="fileInput" accept=".ppt,.pptx" hidden>
+                </div>
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <i class="fa-regular fa-file-powerpoint file-icon"></i>
+                    <div class="file-details">
+                        <span class="filename" id="filename">presentation.pptx</span>
+                        <span class="filesize" id="filesize">0 MB</span>
+                    </div>
+                    <button class="remove-btn" id="removeFile"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <div class="settings-panel">
+                <h3>压缩档位</h3>
+                <div class="presets-grid">
+                    <label class="preset-card">
+                        <input type="radio" name="preset" value="lossless">
+                        <div class="card-content">
+                            <span class="preset-name">完全无损</span>
+                            <span class="preset-desc">15-30% 压缩率</span>
+                        </div>
+                    </label>
+                    <label class="preset-card">
+                        <input type="radio" name="preset" value="high">
+                        <div class="card-content">
+                            <span class="preset-name">高质量</span>
+                            <span class="preset-desc">30-50% 压缩率</span>
+                        </div>
+                    </label>
+                    <label class="preset-card">
+                        <input type="radio" name="preset" value="balanced" checked>
+                        <div class="card-content">
+                            <span class="preset-name">平衡</span>
+                            <span class="preset-desc">50-70% 压缩率</span>
+                        </div>
+                    </label>
+                    <label class="preset-card">
+                        <input type="radio" name="preset" value="aggressive">
+                        <div class="card-content">
+                            <span class="preset-name">激进</span>
+                            <span class="preset-desc">70-85% 压缩率</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="action-area">
+                <button id="compressBtn" class="glass-btn primary" disabled>
+                    <span class="btn-text">开始压缩</span>
+                    <div class="loader" style="display: none;"></div>
+                </button>
+            </div>
+
+            <div class="result-overlay" id="resultOverlay">
+                <div class="result-card glass-panel">
+                    <div class="success-icon">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h2>压缩完成!</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="label">原始大小</span>
+                            <span class="value" id="originalSize">0 MB</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">压缩后</span>
+                            <span class="value" id="compressedSize">0 MB</span>
+                        </div>
+                        <div class="stat-item highlight">
+                            <span class="label">减小</span>
+                            <span class="value" id="reductionSize">0%</span>
+                        </div>
+                    </div>
+                    <div class="result-actions">
+                        <a href="#" id="downloadLink" class="glass-btn primary">下载文件</a>
+                        <button id="compressAnother" class="glass-btn secondary">压缩另一个</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

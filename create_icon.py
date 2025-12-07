@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Create a minimalist Silicon Valley style icon for PPT Compressor
-Inspired by OpenAI's clean design aesthetic
+创建 macOS Sequoia 风格的应用图标
+现代化的蓝绿渐变设计，符合 macOS Sequoia 的视觉风格
 """
 
 from PIL import Image, ImageDraw, ImageFont
@@ -15,10 +16,9 @@ def create_icon():
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # Modern color palette - gradient from blue to purple (like OpenAI)
-    bg_color = (16, 16, 28)  # Dark background
-    accent_color_1 = (99, 102, 241)  # Indigo
-    accent_color_2 = (139, 92, 246)  # Purple
+    # macOS Sequoia color palette - gradient from blue to green
+    accent_color_1 = (0, 122, 255)      # Apple Blue
+    accent_color_2 = (52, 199, 89)      # Apple Green
 
     # Draw rounded square background with gradient effect
     corner_radius = 180

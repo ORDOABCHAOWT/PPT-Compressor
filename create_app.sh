@@ -36,20 +36,53 @@ mkdir -p "$APP_PATH/Contents/Resources"
 
 echo -e "${GREEN}✓ Created app bundle structure${NC}"
 
-# Create the launcher script
+# Create Python wrapper script first
+cat > "$APP_PATH/Contents/Resources/run_gui.py" << 'WRAPPER_EOF'
+#!/usr/bin/env python3
+import os
+import sys
+
+# Change to Resources directory
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# Import and run the GUI
+try:
+    import ppt_compressor_gui
+    ppt_compressor_gui.main()
+except Exception as e:
+    import tkinter as tk
+    from tkinter import messagebox
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showerror("启动错误", f"无法启动PPT Compressor:\n\n{str(e)}")
+    sys.exit(1)
+WRAPPER_EOF
+
+chmod +x "$APP_PATH/Contents/Resources/run_gui.py"
+
+# Create the launcher script - proper bash script for GUI with ARM64 support
 cat > "$APP_PATH/Contents/MacOS/launcher" << 'LAUNCHER_EOF'
 #!/bin/bash
 
 # Get the Resources directory
-RESOURCES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../Resources" && pwd)"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+RESOURCES_DIR="$DIR/../Resources"
 
-# Open Terminal and run the compression tool
-osascript <<EOF
-tell application "Terminal"
-    activate
-    do script "cd '$RESOURCES_DIR' && ./launch_ppt_compressor.sh"
-end tell
-EOF
+cd "$RESOURCES_DIR"
+
+# Find Python3
+if [ -x "/usr/local/bin/python3" ]; then
+    PYTHON="/usr/local/bin/python3"
+elif [ -x "/opt/homebrew/bin/python3" ]; then
+    PYTHON="/opt/homebrew/bin/python3"
+elif [ -x "/usr/bin/python3" ]; then
+    PYTHON="/usr/bin/python3"
+else
+    PYTHON="python3"
+fi
+
+# Execute the wrapper script with ARM64 architecture on Apple Silicon
+exec arch -arm64 "$PYTHON" "$RESOURCES_DIR/run_gui.py"
 LAUNCHER_EOF
 
 chmod +x "$APP_PATH/Contents/MacOS/launcher"
@@ -67,12 +100,19 @@ fi
 # Copy all necessary files to Resources
 cp "$CURRENT_DIR/compress_v3.sh" "$APP_PATH/Contents/Resources/"
 cp "$CURRENT_DIR/ppt_compressor_v3.py" "$APP_PATH/Contents/Resources/"
+cp "$CURRENT_DIR/ppt_compressor_gui.py" "$APP_PATH/Contents/Resources/"
 cp "$CURRENT_DIR/launch_ppt_compressor.sh" "$APP_PATH/Contents/Resources/"
 cp "$CURRENT_DIR/requirements_v3.txt" "$APP_PATH/Contents/Resources/"
+
+# Copy icon files if they exist
+if [ -f "$CURRENT_DIR/icon_128.png" ]; then
+    cp "$CURRENT_DIR/icon_128.png" "$APP_PATH/Contents/Resources/"
+fi
 
 # Make scripts executable
 chmod +x "$APP_PATH/Contents/Resources/compress_v3.sh"
 chmod +x "$APP_PATH/Contents/Resources/ppt_compressor_v3.py"
+chmod +x "$APP_PATH/Contents/Resources/ppt_compressor_gui.py"
 chmod +x "$APP_PATH/Contents/Resources/launch_ppt_compressor.sh"
 
 echo -e "${GREEN}✓ Copied application files${NC}"
@@ -105,6 +145,8 @@ cat > "$APP_PATH/Contents/Info.plist" << PLIST_EOF
     <string>10.13</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>LSUIElement</key>
+    <string>0</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
